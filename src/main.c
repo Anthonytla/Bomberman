@@ -6,6 +6,7 @@ int main(void) {
     while (!game->quit) {
         game_draw(game);
         game_event(game);
+        game_move(game);
     }
     
     game_destroy(game);

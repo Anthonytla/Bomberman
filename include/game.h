@@ -15,14 +15,17 @@ typedef struct {
     SDL_Texture *pTextBomb;
     SDL_Rect backgroundRect;
     SDL_Rect playerPositionRect;
-    SDL_Rect bombRect;
-    SDL_bool hasBomb[15];
+    SDL_Rect bomb[4];
+    SDL_bool hasBomb[4];
+    SDL_bool key[6];
     SDL_bool quit;
+    int bombNbr;
 } stGame;
 
 stGame *game_init();
 void game_draw(stGame *game);
 void game_event(stGame *game);
+void game_move(stGame *game);
 void game_destroy(stGame *game);
 
 #endif
