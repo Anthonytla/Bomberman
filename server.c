@@ -17,21 +17,25 @@ void server(char *argv, char *port)
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
-
-    char *ports[4] = {"8000", "8001", "8002", "8003"};
+    socklen_t addr_size = sizeof their_addr;
     fd_set setFd;
     FD_ZERO(&setFd);
-    for (int i = 0; i < 4; i++)
-    {
+    int status = getaddrinfo(argv, port, &hints, &res);
+    if (status != 0)
+        printf("%s", gai_strerror(status));
+    int sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    bind(sockfd, res->ai_addr, res->ai_addrlen);
+    listen(sockfd, 10);
+    int client1 = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
+    int client2 = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
+    int client3 = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
+    int client4 = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
 
-        int status = getaddrinfo(argv, ports[i], &hints, &res);
-        if (status != 0)
-            printf("%s", gai_strerror(status));
-        int sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-
-    }
-
-    int bindStatus = bind(sockfd, res->ai_addr, res->ai_addrlen);
+    FD_SET(client1, &setFd);
+    FD_SET(client2, &setFd);
+    FD_SET(client3, &setFd);
+    FD_SET(client4, &setFd);
+    /*int bindStatus = bind(sockfd, res->ai_addr, res->ai_addrlen);
     if (bind != 0)
         gai_strerror(bindStatus);
     int listenStatus = listen(sockfd, 10);
@@ -40,22 +44,29 @@ void server(char *argv, char *port)
     int addr_size = sizeof their_addr;
 
     char buff[10];
-    int n;
+    int n;*/
+    if (select(client4 + 1, &setFd, NULL, NULL, NULL) < 0)
+            printf("error select\n");
     printf("Waiting for client...\n");
     while (1)
     {
-        int new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
-        if (new_fd == -1)
-            gai_strerror(new_fd);
-        printf("New client\n");
-        while ((n = read(new_fd, buff, 10)) > 0)
-        {
-            printf("received %s", buff);
-            write(new_fd, "OK", 3);
-            memset(buff, '\0', 10);
+        
+        for (int i = 0; i < FD_SETSIZE; i++) {
+            if (FD_ISSET(i, &setFd)) {
+                
+                if (new_fd == -1)
+                    gai_strerror(new_fd);
+                printf("New client\n");
+                /*while ((n = read(new_fd, buff, 10)) > 0)
+                {
+                    printf("received %s", buff);
+                    write(new_fd, "OK", 3);
+                    memset(buff, '\0', 10);
+                }*/
+            close(i);
+            }
         }
     }
-    close(sockfd);
 }
 
 int main(int argc, char **argv)

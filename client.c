@@ -24,7 +24,7 @@ void client(char *argv, char *port) {
 
     int new_fd = connect(sockfd, res->ai_addr, res->ai_addrlen);
     if (new_fd < 0)
-        printf("Error connect");
+        printf("%s", gai_strerror(new_fd));
     char message[128];
     while (1)
     {
