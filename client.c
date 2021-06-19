@@ -9,7 +9,7 @@
 #include <netinet/in.h>
 #include <stdlib.h>
 
-void client(char *argv, char *port) {
+void client(char *argv) {
     struct addrinfo hints;
     struct addrinfo *res = NULL;
     struct sockaddr_storage their_addr;
@@ -17,12 +17,12 @@ void client(char *argv, char *port) {
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
-    int status = getaddrinfo(argv, port, &hints, &res);
+    int status = getaddrinfo(NULL, argv, &hints, &res);
     if (status != 0)
         printf("1%s", gai_strerror(status));
     
     int sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-
+    printf("thread client");
     int new_fd = connect(sockfd, res->ai_addr, res->ai_addrlen);
     if (new_fd < 0)
         printf("2%s", gai_strerror(new_fd));
@@ -49,5 +49,5 @@ int main(int argc, char **argv)
 {
     if (argc < 2)
         return 2;
-    client(argv[1], argv[2]);
+    client(argv[1]);
 }
