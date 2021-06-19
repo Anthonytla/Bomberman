@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <stdlib.h>
 
 void client(char *argv, char *port) {
     struct addrinfo hints;
@@ -18,13 +19,13 @@ void client(char *argv, char *port) {
 
     int status = getaddrinfo(argv, port, &hints, &res);
     if (status != 0)
-        printf("%s", gai_strerror(status));
+        printf("1%s", gai_strerror(status));
     
     int sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 
     int new_fd = connect(sockfd, res->ai_addr, res->ai_addrlen);
     if (new_fd < 0)
-        printf("%s", gai_strerror(new_fd));
+        printf("2%s", gai_strerror(new_fd));
     char message[128];
     while (1)
     {
