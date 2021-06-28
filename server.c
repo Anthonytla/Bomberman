@@ -12,10 +12,24 @@
 #include <pthread.h>
 #include <string.h>
 
-void *test(void *argv) {
+int read_client(int client) {
 
-    printf("%s" , (char *)argv);
-    pthread_exit(NULL);
+    int n = 0;
+    char buff[128];
+
+    if (client == -1)
+        return 1;
+
+    memset(buff, '\0', 128);
+    while ((n = recv(client, buff, 128, 0)) >= 0) {
+        if (n == 0)
+            return -1;
+        printf("Received %s:", buff);
+        if (buff[n - 1] == '\n')
+            break;
+    }
+    return 0;
+    
 }
 
 void *server(void *argv)
@@ -42,14 +56,15 @@ void *server(void *argv)
         perror("setsockopt");
         exit(1);
     } 
+    printf("Waiting for client...\n");
     int client1 = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
+    printf("Client 1 connected\n");
     int client2 = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
+    printf("Client 2 connected\n");
     /*int client3 = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
     int client4 = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);*/
     fd_set setFd;
-    FD_ZERO(&setFd);
-    FD_SET(client1, &setFd);
-    FD_SET(client2, &setFd);
+   // FD_SET(client2, &setFd);
     /*FD_SET(client3, &setFd);
     FD_SET(client4, &setFd);
     /*int bindStatus = bind(sockfd, res->ai_addr, res->ai_addrlen);
@@ -59,32 +74,33 @@ void *server(void *argv)
     if (listenStatus != 0)
         gai_strerror(listenStatus);
     int addr_size = sizeof their_addr;*/
-    char buff[10];
-    int n;
-    
-    printf("Waiting for client...\n");
-    int select1;
-    while (1)
-    {
-        if ((select1 = select(client2 + 1, &setFd, NULL, NULL, NULL)) < 0)
-            printf("error %s\n", gai_strerror(select1));
-        for (int i = 0; i < client2 + 1; i++) {
-            if (FD_ISSET(i, &setFd)) {
-                while ((n = read(i, buff, 10)) > 0)
-                {
-                    printf("received from %d - %s",i, buff);
-                    write(i, "OK", 3);
-                    memset(buff, '\0', 10);
-                }
-                /*else
-                {
-                    printf("client %d disconnected", i);
-                    break;
-                }*/
-            close(i);
+    while (1) {
+        FD_ZERO(&setFd);
+
+        FD_SET(client1, &setFd);
+        FD_SET(client2, &setFd);
+
+        select(client2 + 1, &setFd, NULL, NULL, NULL);
+        if (FD_ISSET(client1, &setFd)) {
+            if (read_client(client1) == -1) {
+                printf("Client 1 disconnected");
+                close(client1);
+                client1 = -1;
             }
         }
+        if (FD_ISSET(client2, &setFd)) {
+            if (read_client(client2) == -1) {
+                printf("Client 2 disconnected");
+                close(client2);
+                client2 = -1;
+            }
+        }
+
+        if (client1 == -1 && client2 == -1)
+            break;
+        printf("looping\n");
     }
+    
     return NULL;
 }
 
@@ -118,10 +134,7 @@ void *client(void *argv) {
             close(sockfd);
             return NULL;
         }
-        printf("sended %s", message);
-        read(sockfd, message, 3);
-        printf("%s\n", message);
-        memset(message, '\0', 128);
+        printf("sended from client %d :%s",sockfd, message);
     }
     close(sockfd);
     return NULL;
@@ -146,9 +159,8 @@ int main(void)
     pthread_t client_id2;
 
     pthread_create(&server_id, NULL, &server, argv);
-    
-    //pthread_join(server_id, NULL);
+    sleep(2);
     pthread_create(&client_id, NULL, &client, argv);
     pthread_create(&client_id2, NULL, &client, argv);
-    while(1);
+    while(1){};
 }
